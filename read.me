@@ -1,0 +1,308 @@
+//inorder to run the project just install all the dependancies refer to package.json
+
+//What is destructuring in js?
+Destructuring is a JavaScript expression that allows us to extract data from arrays, objects, and maps and set them into new, distinct variables.
+Destructuring allows us to extract multiple properties, or items, from an array​ at a time.
+The right side of the statement contains the Javascript object that we want to split into variables; 
+the left side contains a “pattern” for corresponding properties of the object.
+This “pattern” is usually a list of variable names.
+
+//v1
+Setting up basic express app for our website
+can be easily uunderstood from the code defining all routes and basic crud operations.
+
+----------------------------------------------------------------------------------------------
+
+//v2
+basic layout of the yelpcamp app
+
+new Ejs tool :- ejsMate (boiler plate)
+removed including header and footer like we always did
+using partials
+
+-----------------------------------------------------------------------------------------------
+//v3
+
+Handling express errors
+
+syntax errors
+incomplete data
+problem with api
+incomplete data from form
+validation error
+authentication error
+
+************************************************************************************************************
+how to respond to error codes (status codes)
+express comes with inbuilt error handling that takes care of any error.
+the deafault handling middleware function is added at the end of the middleware function stack.
+
+//defining custom error handlers
+
+callback function will have 4 arguments 
+err, req, res, next
+
+this callback middleware would be at the last.
+if any error is thrown by any middleware it our custom middleware will run.
+
+defining your own error class AppErrors
+
+for catching errors inside an asynchronous function you have to pass it through the next() of the function.
+*************************************************************************************************************
+
+What to do of errors that come from mongoose??
+we handle it using try and catch
+try{
+    //piece of code whatever you wanna try
+}catch(e){
+    next(e);
+}
+
+
+'novalidate' class applied on forms tells the browser not to apply validations because they are handled by us
+
+Error handling :-
+we wrap all the async functions inside the catchAsync() version.
+
+Notes on JOI
+> basically we define a schema for something in javascript
+> for us the schema would be for the req.body
+> and we can validate that if the campground is there as an object and see whether the particular fields match the type.
+> validation can include what's the max size, correct datatype, etc. etc.
+> this schema is not a mongooseSchema this is gonna validate our data even before we save it in our database.
+> Joi.object({
+    //pass all teh things we are looking for.
+    campground : Joi.object({
+        //passing different keys that may be required in our particular schema
+        title: Joi.string().required(),
+        price: Joi.number().required().min(0)
+    }).required()
+})
+
+//pass our data through the schema after defining
+const {error} = campgroundSchema.validate(req.body);
+if(error){
+    const msg=error.details.map(el => el.message).join(',');
+    throw new ExpressError(msg,400);
+}
+
+-------------------------------------------------------------------------------
+
+mongoDB schema https://www.mongodb.com/blog/post/6-rules-of-thumb-for-mongodb-schema-design-part-3
+
+
+------------------------------------------------------------------------------------------------------------
+v4
+Adding review model to campground
+updating campground model (Schema) and adding review schema in it.
+updating show page with some basic review
+
+-----------------------------------------------------------------------------------------------------
+v5
+as app.js is refactored please for notes view them from the v4.
+Tbh i don't think its necessary to refactor it most probably at last i will shift all the routes to app.js
+because personally i dont like the routes at different places.
+
+*****************************************
+
+refactoring app.js
+making a folder names routes and moving all the necessary in the routes folder
+using express-router and exporting them
+acquiring them in our app.js 
+and for campgrounds routes we set the prefix to '/campgorunds'.
+acquiring the required dependancies.
+
+*****************************************
+
+same goes with review routes
+creating the review folder in the routes folder
+moving the routes of review from app.js into the '/routes/review.js'
+acquiring the required dependancies.
+
+******************************************
+serve public directory
+app.use(express.static(path.join(__dirname, 'public')))
+
+express.urlencoded() is a method inbuilt in express 
+to recognize the incoming Request Object as strings or arrays. 
+This method is called as a middleware in your application using the code: 
+app.use(express.urlencoded());
+
+please read httpOnly cookies
+-------------------------------------------------------------------------------------
+
+v6
+we will add authentication and authorization in our app.
+password is not saved as a string in our database rather we  hash it using bcrypt and save it in our database.
+we make a session using express-session and session cookie is saved in the clients browser
+at time of authentication that is login in the user
+we find the user using username 
+we compare the password with the hashed password in our database.
+
+how to stay logged in using session
+we will store the id of a user in session in order to keep track of the user
+the session associates this information with a particular cookie.
+for us the associated information would be like req.session.user_id
+then we add the user id to this 
+and we are done.
+
+********************************************************************
+Introduction of Passport.
+Passport is authentication middleware for Node.js. 
+Extremely flexible and modular, Passport can be unobtrusively dropped in to any Express-based web application.
+A comprehensive set of strategies support authentication using a username and password, Facebook, Twitter, and more.
+
+http://www.passportjs.org/
+https://github.com/jaredhanson/passport-local
+https://github.com/saintedlama/passport-local-mongoose
+
+have to study all this authentication once again.
+--------------------------------------------------------------------------------------------------
+
+v7
+authorization.
+connecting user model with review model and campground model
+so what we did 
+we ended up making middleware like isAuthor : that checks where a logged in user is the real author of a campground
+if he is the real campgorund we give him the permission to edit and delete a campground.
+
+the same goes with reviews.
+if no one is logged we dont show the user the add review form 
+if the user is logged in we allow him to add review in any campground
+also we have written a middleware named isReviewAuthor to check wether a user is the author of the review or not so that he can delete it in future is he wants.
+
+by creating middlewares and verifying the users we have implemented authorization in our app.
+where user have access to only those things that he has created and cannot mess with things of other users.
+eg. editing or deleting a campground and same goes with review.
+
+
+-----------------------------------------------------------------------------------------------------
+
+v8
+refactoring the app a little bit more
+main idea is to make functions of different routes so that we can put them in a seprate file and export them and call them whenever needed
+
+for doing this we have created a new folder names controllers
+in which we have created the file campgrounds.js, reviews.js and users.js
+
+campgrounds.js contains all the function of campground routes such as 
+index :- for displaying all the campgrounds
+renderNewForm ;- to render the form of new campground
+createCampgorund :- to create a new campgorund and add it to database
+showCampground ;- to fetch details of a particular campgorund and render the show.ejs template for the same
+renderEditForm :- render the edit form
+updateCampground :- to update the campgorund in a database.
+deleteCampgorund :- to delete a campgorund.
+
+this functions are called inside the particular routes of tha ./routes/campgorunds.js file.
+
+
+the same is done for reveiws routes and user routes.
+
+The next thing we did is adding star rating in place of the scale.
+we used starability.
+
+*************************************************************************************************************
+Adding a number of images for a particular campground.
+using cloudinary
+
+in order to submit multiple images or files we have to change the enctype to multipart/form-data
+now as we submit the form we don't get anything in the req.body.
+as a result we have to use another middleware known multer middleware.
+
+MULTER
+Multer is a node.js middleware for handling multipart/form-data, 
+which is primarily used for uploading files. 
+It is written on top of busboy for maximum efficiency.
+Multer will not process any form which is not multipart (multipart/form-data).
+
+Multer adds a body object and a file or files object to the request object. 
+The body object contains the values of the text fields of the form, the file or files object contains the files uploaded via the form.
+
+the packages and service used are
+cloudinary :- for uploading images
+cloudinary package :- for creating instance of a cloudinary storage.
+and multer-storage-cloudinary :- A multer storage engine for Cloudinary. Also consult the Cloudinary API.
+
+************************************************************************************************************************
+we decided to change the look for upload file button
+so we chose bootstrap choose file button
+now in order to display the file name we had to write som ejavascript
+but instead we includes a script known as bs-custom-file-input.
+
+Works with Bootstrap 4
+Works without dependencies and jQuery
+Display file name
+Display file names for multiple input
+Reset your custom file input to its initial state
+Handle form reset
+Allow custom selectors for input, and form
+Allow to drag and drop files
+Allow you to change the default display with a child in the <label> element
+Built in UMD to be used everywhere
+Small, only 2kb and less if you gzip it
+
+Source :- https://www.npmjs.com/package/bs-custom-file-input
+
+----------------------------------------------------------------------------------------------------------------------
+
+v9
+so in this version we gonna add the functionality of map using mapbox
+Register to mapbox and get the public token.
+
+Setting up mapbox tools in order to get locato=ion from user and geocode them 
+
+Using mapbox geocode api :-
+The Mapbox Geocoding API does two things: forward geocoding and reverse geocoding.
+Forward geocoding converts location text into geographic coordinates, turning 2 Lincoln Memorial Circle NW into -77.050,38.889.
+Reverse geocoding turns geographic coordinates into place names, turning -77.050, 38.889 into 2 Lincoln Memorial Circle NW.
+These location names can vary in specificity, from individual addresses to states and countries that contain the given coordinates.
+
+@mapbox/mapbox-sdk
+A JS SDK for working with Mapbox APIs.
+
+Works in Node, the browser, and React Native.
+
+how to store location in our mongoDB database
+Schema example:
+const citySchema = new mongoose.Schema({
+  name: String,
+  location: {
+    type: {
+      type: String, // Don't do `{ location: { type: String } }`
+      enum: ['Point'], // 'location.type' must be 'Point'
+      required: true
+    },
+    coordinates: {
+      type: [Number],
+      required: true
+    }
+  }
+});
+
+now we get the location from the form geocode it using the mapbox api.
+we store it
+location: {
+    type: {
+      type: String, // Don't do `{ location: { type: String } }`
+      enum: ['Point'], // 'location.type' must be 'Point'
+      required: true
+    },
+    coordinates: {
+      type: [Number],
+      required: true
+    }
+as this in the database.
+now we have both the coordinates of the loaction.
+
+displaying a map
+we will use Mapbox gl js library
+so its easy just look at the docs
+
+one thing to remeber is we wrote a separate js file for this maps
+and we accessed the mapbox token using first passing it through our showpage ejs
+like <%- process.env.Mapbox_Token %>
+so that we can have acces of that in our javascript file
+the same we did for passing campgrounds in our javascript file.
+
+after accessing the token and campground we can center the map at our location and also add a marker.
